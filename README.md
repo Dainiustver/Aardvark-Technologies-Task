@@ -1,0 +1,1 @@
+Roulette mini app for Aardvark Technologies company as a frontend task.
