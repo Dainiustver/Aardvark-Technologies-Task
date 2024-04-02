@@ -1,6 +1,6 @@
 <template>
   <header>
-    <h2 class="stats__header">Stats (last 200)</h2>
+    <h2 class="stats__header">Stats (last {{ resultsCounter }})</h2>
   </header>
   <div class="stats">
     <div class="stats__legend">
@@ -75,8 +75,8 @@
       </div>
     </div>
   </div>
-  <div v-if="dataFetchSuccess === false">
-    <p class="errorMessage">
+  <div class="errorMessage">
+    <p v-if="dataFetchSuccess === false">
       Sorry, something went wrong! Retrying in {{ retryCounter }} seconds...
     </p>
   </div>
@@ -89,8 +89,10 @@ export default {
     return {
       allSlots: [],
       dataFetchSuccess: null,
-      retryCounter: null,
+      retryTimeout: null,
       retryInterval: null,
+      retryCounter: null,
+      resultsCounter: 200,
     };
   },
   methods: {
@@ -99,18 +101,19 @@ export default {
         "updateLogs",
         "Fetching last 200 games and color configuration..."
       );
+
       try {
         this.dataFetchSuccess = true;
+        clearTimeout(this.retryTimeout);
         clearInterval(this.retryInterval);
-        const rollData = await axios.get(
-          "https://dev-games-backend.advbet.com/v1/ab-roulette/1/stats?limit=200"
-        );
-
+        const rollData = await axios.get(this.currentLink + "/stats?limit=200");
         this.allSlots = rollData.data;
 
         const numberColors = await axios.get(
-          "https://dev-games-backend.advbet.com/v1/ab-roulette/1/configuration"
+          this.currentLink + "/configuration"
         );
+        console.log(rollData);
+        console.log(numberColors);
 
         const newArray = [];
         this.allSlots.forEach((slot) => {
@@ -128,13 +131,31 @@ export default {
       } catch (e) {
         this.$store.dispatch("updateLogs", "Fetching failed! Retrying...");
         this.dataFetchSuccess = false;
-        setTimeout(() => {
+        if (this.retryTimeout) {
+          clearTimeout(this.retryTimeout);
+        }
+        this.retryTimeout = setTimeout(() => {
           this.fetchGameData();
         }, 5000);
         this.retryCounter = 5;
+        if (this.retryInterval) clearInterval(this.retryInterval);
         this.retryInterval = setInterval(() => {
           this.retryCounter--;
         }, 1000);
+      }
+    },
+
+    resetState() {
+      this.allSlots = [];
+      this.dataFetchSuccess = null;
+      this.retryCounter = null;
+      if (this.retryTimeout) {
+        clearTimeout(this.retryTimeout);
+        this.retryTimeout = null;
+      }
+      if (this.retryInterval) {
+        clearInterval(this.retryInterval);
+        this.retryInterval = null;
       }
     },
 
@@ -142,20 +163,29 @@ export default {
       return arr.sort((a, b) => a.count - b.count);
     },
   },
+
   computed: {
-    coldSlots() {
-      return this.allSlots.slice(0, 5);
+    currentLink() {
+      return this.$store.getters.currentLink;
     },
-    neutralSlots() {
-      return this.allSlots.slice(5, 32);
-    },
-    hotSlots() {
-      return this.allSlots.slice(32);
-    },
+
     newWinner() {
       return this.$store.getters.lastGameWinner;
     },
+
+    coldSlots() {
+      return this.allSlots.slice(0, 5);
+    },
+
+    neutralSlots() {
+      return this.allSlots.slice(5, -5);
+    },
+
+    hotSlots() {
+      return this.allSlots.slice(-5);
+    },
   },
+
   mounted() {
     this.fetchGameData();
   },
@@ -166,6 +196,14 @@ export default {
         const idx = this.allSlots.findIndex((slot) => newValue === slot.result);
         this.allSlots[idx].count++;
         this.allSlots = this.sortArray(this.allSlots);
+        this.resultsCounter += 1;
+      }
+    },
+
+    currentLink(newValue) {
+      if (newValue) {
+        this.resetState();
+        this.fetchGameData();
       }
     },
   },
@@ -240,6 +278,8 @@ export default {
 }
 
 .errorMessage {
+  margin-top: 1rem;
+  height: 2rem;
   color: red;
   text-align: center;
 }

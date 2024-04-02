@@ -12,6 +12,32 @@ export default {
       baseAPI: "https://dev-games-backend.advbet.com/v1/ab-roulette/1",
     };
   },
+
+  created() {
+    this.debouncedSetLink = this.debounce((newValue) => {
+      this.$store.dispatch("setLink", newValue);
+    }, 1000);
+  },
+
+  methods: {
+    debounce(func, delay) {
+      let timeoutId = null;
+      return function (...args) {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          func(...args);
+        }, delay);
+      };
+    },
+  },
+
+  watch: {
+    baseAPI(newValue) {
+      if (newValue) {
+        this.debouncedSetLink(newValue);
+      }
+    },
+  },
 };
 </script>
 

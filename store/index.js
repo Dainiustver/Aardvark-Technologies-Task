@@ -1,5 +1,4 @@
 import { createStore } from "vuex";
-// import axios from "axios";
 
 export default createStore({
   state() {
@@ -12,7 +11,7 @@ export default createStore({
   },
   mutations: {
     fillNumbers(state, numArray) {
-      state.rouletteNumbers.push(...numArray);
+      state.rouletteNumbers = numArray;
     },
     setGameWinner(state, gameWinner) {
       state.lastGameWinner = gameWinner;
@@ -45,6 +44,9 @@ export default createStore({
     },
     lastGameWinner(state) {
       return state.lastGameWinner;
+    },
+    currentLink(state) {
+      return state.currentLink;
     },
     logs(state) {
       return state.logs;

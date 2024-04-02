@@ -66,6 +66,10 @@ export default {
     fetchWinner() {
       return +this.$store.getters.lastGameWinner;
     },
+
+    currentLink() {
+      return this.$store.getters.currentLink;
+    },
   },
 
   watch: {
@@ -77,9 +81,7 @@ export default {
   async mounted() {
     this.$store.dispatch("updateLogs", "Fetching color configuration...");
     try {
-      const res = await axios.get(
-        "https://dev-games-backend.advbet.com/v1/ab-roulette/1/configuration"
-      );
+      const res = await axios.get(this.currentLink + "/configuration");
       this.$store.dispatch("fillNumbers", res.data.results);
       this.rouletteNumbers = res.data.positionToId;
       this.rouletteColors = res.data.colors;

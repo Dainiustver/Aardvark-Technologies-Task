@@ -9,9 +9,11 @@
           {{ event }}
         </li>
         <li class="currentEvent">{{ currentEvent }}</li>
-        <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
-        <base-spinner v-if="isSpinning"></base-spinner>
       </ul>
+      <div class="eventStatus">
+        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+        <base-spinner v-if="isSpinning"></base-spinner>
+      </div>
     </div>
   </div>
 </template>
@@ -24,80 +26,86 @@ export default {
     return {
       currentEvent: "",
       eventHistory: [],
-      newGameTimer: null,
+      loadSuccess: null,
+      newGameStartsIn: null,
       newGameInterval: null,
+      retryInterval: null,
       isSpinning: false,
-      currentGame: null,
       errorMessage: "",
-      retryTimer: null,
+      willRetryIn: null,
+      gameId: null,
+      uuid: null,
     };
   },
 
   methods: {
     async fetchNextGame() {
       this.isSpinning = true;
+      this.errorMessage = "";
+      this.willRetryIn = null;
+      this.gameId = null;
+      this.uuid = null;
+      clearInterval(this.newGameInterval);
       this.currentEvent = "Fetching new game...";
       this.$store.dispatch("updateLogs", "Fetching new game...");
 
       try {
-        const res = await axios.get(
-          "https://dev-games-backend.advbet.com/v1/ab-roulette/1/nextGame"
-        );
+        const res = await axios.get(this.currentLink + "/nextGame");
 
+        this.loadSuccess = true;
         this.isSpinning = false;
-        this.newGameTimer = res.data.fakeStartDelta;
-        this.updateCurrentEvent(res.data.id);
-
-        this.newGameInterval = setInterval(() => {
-          if (this.newGameTimer > 0) {
-            this.newGameTimer--;
-            this.updateCurrentEvent(res.data.id);
-          } else {
-            clearInterval(this.newGameInterval);
-            this.currentEvent = "Spinning...";
-            this.isSpinning = true;
-            this.renderCurrentGameResults(res.data.id, res.data.uuid);
-          }
-        }, 1000);
-
+        this.newGameStartsIn = res.data.fakeStartDelta;
+        this.gameId = res.data.id;
+        this.uuid = res.data.uuid;
+        this.updateCurrentEvent();
         this.$store.dispatch(
           "updateLogs",
           "New game fetched successfully. Starting timer..."
         );
+
+        this.newGameInterval = setInterval(() => {
+          if (this.newGameStartsIn > 0) {
+            this.newGameStartsIn--;
+            this.updateCurrentEvent();
+          } else {
+            clearInterval(this.newGameInterval);
+            this.currentEvent = "Spinning...";
+            this.isSpinning = true;
+            this.renderCurrentGameResults();
+          }
+        }, 1000);
       } catch (e) {
         this.$store.dispatch(
           "updateLogs",
           "New game fetching failed! Retrying..."
         );
         this.retryFetch("fetch");
-
-        // Handle error
       }
     },
 
-    updateCurrentEvent(gameId) {
-      this.currentEvent = `Game ${gameId} will start in ${this.newGameTimer} ${
-        this.newGameTimer > 1 ? "seconds" : "second"
-      }...`;
+    updateCurrentEvent() {
+      this.currentEvent = `Game ${this.gameId} will start in ${
+        this.newGameStartsIn
+      } ${this.newGameStartsIn === 1 ? "second" : "seconds"}...`;
     },
 
-    async renderCurrentGameResults(gameId, uuid) {
+    async renderCurrentGameResults() {
       this.$store.dispatch(
         "updateLogs",
         "Rendering results for current game..."
       );
 
       try {
-        const result = await axios.get(
-          `https://dev-games-backend.advbet.com/v1/ab-roulette/1/game/${uuid}`
-        );
+        const result = await axios.get(this.currentLink + `/game/${this.uuid}`);
+
+        this.loadSuccess = true;
 
         if (result.data.outcome !== undefined) {
           setTimeout(() => {
             this.isSpinning = false;
             this.$store.dispatch("setGameWinner", result.data.outcome);
             this.eventHistory.push(
-              `Game ${gameId} finished. The outcome was ${result.data.outcome}`
+              `Game ${this.gameId} finished. The outcome was ${result.data.outcome}`
             );
             this.fetchNextGame();
           }, 2000);
@@ -108,32 +116,76 @@ export default {
         }
       } catch (e) {
         this.$store.dispatch("updateLogs", "Rendering failed! Retrying...");
-
         this.retryFetch("load");
       }
     },
 
     retryFetch(mode) {
+      this.loadSuccess = false;
       this.isSpinning = false;
-      this.currentEvent = null;
-      this.retryTimer = 5;
+      this.currentEvent = "";
+      this.willRetryIn = initialRetries;
 
-      const retryInterval = setInterval(() => {
-        this.errorMessage = `Something went wrong! Retrying in ${this.retryTimer} seconds...`;
-        this.retryTimer--;
+      if (this.retryInterval) clearInterval(this.retryInterval);
 
-        if (this.retryTimer === -1) {
-          clearInterval(retryInterval);
+      this.retryInterval = setInterval(() => {
+        this.errorMessage = this.retryErrorMessage;
+        this.willRetryIn -= 1;
+
+        if (this.willRetryIn <= 0) {
+          clearInterval(this.retryInterval);
           this.isSpinning = true;
           this.errorMessage = "Retrying...";
           setTimeout(() => {
-            this.errorMessage = `Something went wrong! Retrying in ${this.retryTimer} seconds...`;
             mode === "fetch"
               ? this.fetchNextGame()
               : this.renderCurrentGameResults();
           }, 2000);
         }
+
+        if (this.loadSuccess) {
+          return;
+        } else {
+          this.retryFetch(mode);
+        }
       }, 1000);
+    },
+
+    resetState() {
+      this.currentEvent = "";
+      this.eventHistory = [];
+      this.loadSuccess = null;
+      this.newGameStartsIn = null;
+      if (this.newGameInterval) clearInterval(this.newGameInterval);
+      this.newGameInterval = null;
+      if (this.retryInterval) clearInterval(this.retryInterval);
+      this.retryInterval = null;
+      this.isSpinning = false;
+      this.errorMessage = "";
+      this.willRetryIn = null;
+      this.gameId = null;
+      this.uuid = null;
+    },
+  },
+
+  computed: {
+    currentLink() {
+      return this.$store.getters.currentLink;
+    },
+
+    retryErrorMessage() {
+      return `Something went wrong! Retrying in ${this.willRetryIn} ${
+        this.willRetryIn === 1 ? "second" : "seconds"
+      }`;
+    },
+  },
+
+  watch: {
+    currentLink(newValue) {
+      if (newValue) {
+        this.resetState();
+        this.fetchNextGame();
+      }
     },
   },
 
@@ -166,6 +218,13 @@ export default {
 
 .event {
   margin-bottom: 0.5rem;
+}
+
+.eventStatus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .error {
