@@ -112,8 +112,6 @@ export default {
         const numberColors = await axios.get(
           this.currentLink + "/configuration"
         );
-        console.log(rollData);
-        console.log(numberColors);
 
         const newArray = [];
         this.allSlots.forEach((slot) => {
@@ -122,9 +120,9 @@ export default {
           );
 
           newArray.push({
-            result: slot.result,
+            result: slot.result === 37 ? "00" : slot.result, //Not the cleanest code I have to agree, but this comes from the fact that /stats returns results in which double zero roll is named as 37 and in /configuration same result is returned as 00 and thus my forEach above doesn't find a match. Hopefully roulette numbers won't change for a while and this will be fine
             count: slot.count,
-            color: numberColors.data.colors[idx],
+            color: slot.result === 37 ? "green" : numberColors.data.colors[idx],
           });
         });
         this.allSlots = newArray;
