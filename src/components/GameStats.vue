@@ -15,7 +15,7 @@
           class="stats__slot"
           :style="{ backgroundColor: slot.color }"
           v-for="(slot, index) in coldSlots"
-          :key="`cold-${slot}-${index}`"
+          :key="`cold-${slot.number}-${index}`"
         >
           {{ slot.result }}
         </div>
@@ -23,10 +23,10 @@
       <div class="stats__hits">
         <div
           class="stats__hit"
-          v-for="(hit, index) in coldSlots"
-          :key="`cold-hit-${hit}-${index}`"
+          v-for="(slot, index) in coldSlots"
+          :key="`cold-hit-${slot.number}-${index}`"
         >
-          {{ hit.count }}
+          {{ slot.hits }}
         </div>
       </div>
     </div>
@@ -37,7 +37,7 @@
           class="stats__slot"
           :style="{ backgroundColor: slot.color }"
           v-for="(slot, index) in neutralSlots"
-          :key="`neutral-${slot}-${index}`"
+          :key="`neutral-${slot.number}-${index}`"
         >
           {{ slot.result }}
         </div>
@@ -45,10 +45,10 @@
       <div class="stats__hits">
         <div
           class="stats__hit"
-          v-for="(hit, index) in neutralSlots"
-          :key="`neutral-hit-${hit}-${index}`"
+          v-for="(slot, index) in neutralSlots"
+          :key="`neutral-hit-${slot.number}-${index}`"
         >
-          {{ hit.count }}
+          {{ slot.hits }}
         </div>
       </div>
     </div>
@@ -59,7 +59,7 @@
           class="stats__slot"
           :style="{ backgroundColor: slot.color }"
           v-for="(slot, index) in hotSlots"
-          :key="`hot-${slot}-${index}`"
+          :key="`hot-${slot.number}-${index}`"
         >
           {{ slot.result }}
         </div>
@@ -67,104 +67,39 @@
       <div class="stats__hits">
         <div
           class="stats__hit"
-          v-for="(hit, index) in hotSlots"
-          :key="`hot-hit-${hit}-${index}`"
+          v-for="(slot, index) in hotSlots"
+          :key="`hot-hit-${slot.number}-${index}`"
         >
-          {{ hit.count }}
+          {{ slot.hits }}
         </div>
       </div>
     </div>
   </div>
-  <div class="errorMessage">
-    <p v-if="dataFetchSuccess === false">
-      Sorry, something went wrong! Retrying in {{ retryCounter }} seconds...
-    </p>
-  </div>
 </template>
 
 <script>
-import axios from "axios";
 export default {
   data() {
     return {
       allSlots: [],
-      dataFetchSuccess: null,
-      retryTimeout: null,
-      retryInterval: null,
-      retryCounter: null,
       resultsCounter: 200,
     };
   },
   methods: {
-    async fetchGameData() {
-      this.$store.dispatch(
-        "updateLogs",
-        "Fetching last 200 games and color configuration..."
-      );
-
-      try {
-        this.dataFetchSuccess = true;
-        clearTimeout(this.retryTimeout);
-        clearInterval(this.retryInterval);
-        const rollData = await axios.get(this.currentLink + "/stats?limit=200");
-        this.allSlots = rollData.data;
-
-        const numberColors = await axios.get(
-          this.currentLink + "/configuration"
-        );
-
-        const newArray = [];
-        this.allSlots.forEach((slot) => {
-          const idx = numberColors.data.results.findIndex(
-            (num) => num == slot.result
-          );
-
-          newArray.push({
-            result: slot.result === 37 ? "00" : slot.result, //Not the cleanest code I have to agree, but this comes from the fact that /stats returns results in which double zero roll is named as 37 and in /configuration same result is returned as 00 and thus my forEach above doesn't find a match. Hopefully roulette numbers won't change for a while and this will be fine
-            count: slot.count,
-            color: slot.result === 37 ? "green" : numberColors.data.colors[idx],
-          });
-        });
-        this.allSlots = newArray;
-      } catch (e) {
-        this.$store.dispatch("updateLogs", "Fetching failed! Retrying...");
-        this.dataFetchSuccess = false;
-        if (this.retryTimeout) {
-          clearTimeout(this.retryTimeout);
-        }
-        this.retryTimeout = setTimeout(() => {
-          this.fetchGameData();
-        }, 5000);
-        this.retryCounter = 5;
-        if (this.retryInterval) clearInterval(this.retryInterval);
-        this.retryInterval = setInterval(() => {
-          this.retryCounter--;
-        }, 1000);
-      }
+    async updateStats() {
+      const rouletteNumbersDataClone = this.$store.getters.rouletteNumbersData;
+      const rouletteNumbersSorted = this.sortByHits(rouletteNumbersDataClone);
+      this.allSlots = rouletteNumbersSorted;
     },
 
-    resetState() {
-      this.allSlots = [];
-      this.dataFetchSuccess = null;
-      this.retryCounter = null;
-      if (this.retryTimeout) {
-        clearTimeout(this.retryTimeout);
-        this.retryTimeout = null;
-      }
-      if (this.retryInterval) {
-        clearInterval(this.retryInterval);
-        this.retryInterval = null;
-      }
-    },
-
-    sortArray(arr) {
-      return arr.sort((a, b) => a.count - b.count);
+    sortByHits(arr) {
+      return arr.sort((a, b) => a.hits - b.hits);
     },
   },
 
   computed: {
-    currentLink() {
-      return this.$store.getters.currentLink;
+    dataIsReady() {
+      return this.$store.getters.dataIsFetched;
     },
 
     newWinner() {
@@ -184,25 +119,21 @@ export default {
     },
   },
 
-  mounted() {
-    this.fetchGameData();
-  },
-
   watch: {
     newWinner(newValue) {
-      if (newValue) {
-        const idx = this.allSlots.findIndex((slot) => newValue === slot.result);
-        this.allSlots[idx].count++;
-        this.allSlots = this.sortArray(this.allSlots);
-        this.resultsCounter += 1;
-      }
+      const idx = this.allSlots.findIndex((slot) => slot.result === newValue);
+      this.allSlots[idx].hits += 1;
+      this.allSlots = this.sortByHits(this.allSlots);
+      this.resultsCounter += 1;
     },
 
-    currentLink(newValue) {
-      if (newValue) {
-        this.resetState();
-        this.fetchGameData();
-      }
+    dataIsReady: {
+      handler(newValue) {
+        if (newValue) {
+          this.updateStats();
+        }
+      },
+      immediate: true,
     },
   },
 };

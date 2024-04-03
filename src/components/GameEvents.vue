@@ -11,7 +11,6 @@
         <li class="currentEvent">{{ currentEvent }}</li>
       </ul>
       <div class="eventStatus">
-        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
         <base-spinner v-if="isSpinning"></base-spinner>
       </div>
     </div>
@@ -26,171 +25,109 @@ export default {
     return {
       currentEvent: "",
       eventHistory: [],
-      loadSuccess: null,
+      newGameTimer: null,
       newGameStartsIn: null,
-      newGameInterval: null,
-      retryInterval: null,
       isSpinning: false,
-      errorMessage: "",
-      willRetryIn: null,
-      gameId: null,
-      uuid: null,
     };
   },
 
   methods: {
     async fetchNextGame() {
+      this.resetState();
+
       this.isSpinning = true;
-      this.errorMessage = "";
-      this.willRetryIn = null;
-      this.gameId = null;
-      this.uuid = null;
-      clearInterval(this.newGameInterval);
       this.currentEvent = "Fetching new game...";
       this.$store.dispatch("updateLogs", "Fetching new game...");
 
       try {
         const res = await axios.get(this.currentLink + "/nextGame");
-
-        this.loadSuccess = true;
-        this.isSpinning = false;
-        this.newGameStartsIn = res.data.fakeStartDelta;
-        this.gameId = res.data.id;
-        this.uuid = res.data.uuid;
-        this.updateCurrentEvent();
         this.$store.dispatch(
           "updateLogs",
           "New game fetched successfully. Starting timer..."
         );
+        this.isSpinning = false;
+        this.newGameStartsIn = res.data.fakeStartDelta;
+        this.updateCurrentEvent(res.data.id);
 
-        this.newGameInterval = setInterval(() => {
-          if (this.newGameStartsIn > 0) {
+        this.newGameTimer = setInterval(() => {
+          if (this.newGameStartsIn > 1) {
             this.newGameStartsIn--;
-            this.updateCurrentEvent();
+            this.updateCurrentEvent(res.data.id);
           } else {
-            clearInterval(this.newGameInterval);
+            clearInterval(this.newGameTimer);
             this.currentEvent = "Spinning...";
             this.isSpinning = true;
-            this.renderCurrentGameResults();
+            this.renderCurrentGameResults(res.data.id, res.data.uuid);
           }
         }, 1000);
       } catch (e) {
-        this.$store.dispatch(
-          "updateLogs",
-          "New game fetching failed! Retrying..."
-        );
-        this.retryFetch("fetch");
+        this.$store.dispatch("updateLogs", "New game fetch failed");
+        this.$store.dispatch("toggleReload");
       }
     },
 
-    updateCurrentEvent() {
-      this.currentEvent = `Game ${this.gameId} will start in ${
+    updateCurrentEvent(gameId) {
+      this.currentEvent = `Game ${gameId} will start in ${
         this.newGameStartsIn
-      } ${this.newGameStartsIn === 1 ? "second" : "seconds"}...`;
+      } ${this.newGameStartsIn > 1 ? "seconds" : "second"}...`;
     },
 
-    async renderCurrentGameResults() {
+    async renderCurrentGameResults(gameId, uuid) {
       this.$store.dispatch(
         "updateLogs",
         "Rendering results for current game..."
       );
 
       try {
-        const result = await axios.get(this.currentLink + `/game/${this.uuid}`);
-
-        this.loadSuccess = true;
-
+        const result = await axios.get(this.currentLink + `/game/${uuid}`);
+        this.$store.dispatch("updateLogs", "Rendering was successful");
         if (result.data.outcome !== undefined) {
-          setTimeout(() => {
-            this.isSpinning = false;
-            this.$store.dispatch("setGameWinner", result.data.outcome);
-            this.eventHistory.push(
-              `Game ${this.gameId} finished. The outcome was ${result.data.outcome}`
-            );
-            this.fetchNextGame();
-          }, 2000);
+          this.isSpinning = false;
+          this.$store.dispatch("setGameWinner", result.data.outcome);
+          this.eventHistory.push(
+            `Game ${gameId} finished. The outcome was ${result.data.outcome}`
+          );
+          this.fetchNextGame();
         } else {
           setTimeout(() => {
-            this.renderCurrentGameResults();
-          }, 1000);
+            this.renderCurrentGameResults(gameId, uuid);
+          }, 3000);
         }
       } catch (e) {
-        this.$store.dispatch("updateLogs", "Rendering failed! Retrying...");
-        this.retryFetch("load");
+        this.$store.dispatch("updateLogs", "Rendering failed");
+        this.$store.dispatch("toggleReload");
       }
-    },
-
-    retryFetch(mode) {
-      this.loadSuccess = false;
-      this.isSpinning = false;
-      this.currentEvent = "";
-      this.willRetryIn = initialRetries;
-
-      if (this.retryInterval) clearInterval(this.retryInterval);
-
-      this.retryInterval = setInterval(() => {
-        this.errorMessage = this.retryErrorMessage;
-        this.willRetryIn -= 1;
-
-        if (this.willRetryIn <= 0) {
-          clearInterval(this.retryInterval);
-          this.isSpinning = true;
-          this.errorMessage = "Retrying...";
-          setTimeout(() => {
-            mode === "fetch"
-              ? this.fetchNextGame()
-              : this.renderCurrentGameResults();
-          }, 2000);
-        }
-
-        if (this.loadSuccess) {
-          return;
-        } else {
-          this.retryFetch(mode);
-        }
-      }, 1000);
     },
 
     resetState() {
       this.currentEvent = "";
-      this.eventHistory = [];
-      this.loadSuccess = null;
+      clearInterval(this.newGameTimer);
+      this.newGameTimer = null;
       this.newGameStartsIn = null;
-      if (this.newGameInterval) clearInterval(this.newGameInterval);
-      this.newGameInterval = null;
-      if (this.retryInterval) clearInterval(this.retryInterval);
-      this.retryInterval = null;
       this.isSpinning = false;
-      this.errorMessage = "";
-      this.willRetryIn = null;
-      this.gameId = null;
-      this.uuid = null;
     },
   },
 
   computed: {
+    dataIsReady() {
+      return this.$store.getters.dataIsFetched;
+    },
     currentLink() {
       return this.$store.getters.currentLink;
-    },
-
-    retryErrorMessage() {
-      return `Something went wrong! Retrying in ${this.willRetryIn} ${
-        this.willRetryIn === 1 ? "second" : "seconds"
-      }`;
     },
   },
 
   watch: {
-    currentLink(newValue) {
-      if (newValue) {
-        this.resetState();
-        this.fetchNextGame();
-      }
+    dataIsReady: {
+      handler(newValue) {
+        if (newValue) {
+          this.resetState();
+          this.fetchNextGame();
+          this.eventHistory = [];
+        }
+      },
+      immediate: true,
     },
-  },
-
-  mounted() {
-    this.fetchNextGame();
   },
 
   components: { BaseSpinner },

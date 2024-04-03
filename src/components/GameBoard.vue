@@ -6,32 +6,29 @@
     <div class="roulette">
       <button
         class="roulette__number"
-        v-for="(number, index) in rouletteNumbers"
+        v-for="(slot, index) in rouletteNumbersData"
         :key="index"
         :style="getPositionStyle(index)"
-        :class="{ roulette__winner: checkWinner(number) }"
+        :class="{ roulette__winner: checkWinner(slot.result) }"
       >
-        {{ number.number }}
+        {{ slot.result }}
       </button>
     </div>
   </div>
 </template>
 
 <script>
-import axios from "axios";
 export default {
   data() {
     return {
-      rouletteNumbers: [],
-      rouletteColors: [],
+      rouletteNumbersData: [],
       winner: null,
     };
   },
   methods: {
     //Positioning roulette numbers in a circle, giving them white color and required background color
     getPositionStyle(index) {
-      const totalNumbers = this.rouletteNumbers.length;
-      // Subtract π/2 from the starting angle to rotate the wheel so 0 is at the top
+      const totalNumbers = this.rouletteNumbersData.length;
       const angle = (index / totalNumbers) * (2 * Math.PI) - Math.PI / 2;
 
       const buttonSize = 40;
@@ -47,44 +44,23 @@ export default {
         top: `${y}px`,
         transform: "translate(-50%, -50%)",
         color: "white",
-        backgroundColor: `${this.rouletteNumbers[index].color}`,
+        backgroundColor: `${this.rouletteNumbersData[index].color}`,
       };
     },
 
-    async renderGameWheel() {
-      this.$store.dispatch("updateLogs", "Fetching color configuration...");
-      try {
-        const res = await axios.get(this.currentLink + "/configuration");
-        this.$store.dispatch("fillNumbers", res.data.results);
-        // this.rouletteNumbers = res.data.positionToId;
-        // this.rouletteColors = res.data.colors;
-        const tempArray = [];
-        res.data.results.forEach((num, i) => {
-          let eachPosition = res.data.positionToId.findIndex(
-            (position) => position === +num
-          );
-          tempArray.push({
-            number: num,
-            color: res.data.colors[i],
-            position: eachPosition,
-          });
-        });
-        this.rouletteNumbers = tempArray;
-        console.log(this.rouletteNumbers);
-        this.rouletteNumbers.sort((a, b) => {
-          return a.position - b.position;
-        });
-      } catch (e) {
-        this.$store.dispatch("updateLogs", "Fetching failed! Retrying...");
-        console.log(e);
-      }
+    updateBoard() {
+      const numArrayClone = this.$store.getters.rouletteNumbersData.slice();
+      const numArraySorted = numArrayClone.sort(
+        (a, b) => a.position - b.position
+      );
+      this.rouletteNumbersData = numArraySorted;
     },
 
     setWinner(num) {
-      this.winner = +num;
+      this.winner = num;
       setTimeout(() => {
         this.winner = null;
-      }, 16000);
+      }, 15000);
     },
 
     checkWinner(num) {
@@ -93,31 +69,30 @@ export default {
   },
 
   computed: {
-    fetchWinner() {
-      return +this.$store.getters.lastGameWinner;
+    dataIsReady() {
+      return this.$store.getters.dataIsFetched;
     },
 
-    currentLink() {
-      return this.$store.getters.currentLink;
+    fetchWinner() {
+      return this.$store.getters.lastGameWinner;
     },
   },
 
   watch: {
+    dataIsReady: {
+      handler(newValue) {
+        if (newValue) {
+          this.updateBoard();
+        }
+      },
+      immediate: true,
+    },
+
     fetchWinner(newValue) {
       if (newValue) {
         this.setWinner(newValue);
       }
     },
-
-    currentLink(newValue) {
-      if (newValue) {
-        this.renderGameWheel();
-      }
-    },
-  },
-
-  async mounted() {
-    this.renderGameWheel();
   },
 };
 </script>

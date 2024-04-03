@@ -1,18 +1,20 @@
 import { createStore } from "vuex";
+import requests from "./requests";
 
 export default createStore({
+  modules: {
+    requests,
+  },
   state() {
     return {
-      rouletteNumbers: [],
       currentLink: "https://dev-games-backend.advbet.com/v1/ab-roulette/1",
       lastGameWinner: null,
       logs: [],
+      reloadNeeded: false,
+      reloadTimerStarted: false,
     };
   },
   mutations: {
-    fillNumbers(state, numArray) {
-      state.rouletteNumbers = numArray;
-    },
     setGameWinner(state, gameWinner) {
       state.lastGameWinner = gameWinner;
     },
@@ -22,13 +24,16 @@ export default createStore({
     updateLogs(state, log) {
       state.logs.unshift(log);
     },
+    toggleReload(state) {
+      state.reloadNeeded = true;
+    },
+    startReloadTimer(state) {
+      state.reloadTimerStarted = true;
+    },
   },
   actions: {
-    fillNumbers(context, numArray) {
-      context.commit("fillNumbers", numArray);
-    },
     setGameWinner(context, gameWinner) {
-      context.commit("setGameWinner", +gameWinner);
+      context.commit("setGameWinner", gameWinner);
     },
     setLink(context, link) {
       context.commit("setLink", link);
@@ -36,6 +41,12 @@ export default createStore({
     updateLogs(context, log) {
       let currentDateTime = new Date().toLocaleString("lt-LT");
       context.commit("updateLogs", currentDateTime + " " + log);
+    },
+    toggleReload(context) {
+      context.commit("startReloadTimer");
+      setTimeout(() => {
+        context.commit("toggleReload");
+      }, 10000);
     },
   },
   getters: {
@@ -50,6 +61,12 @@ export default createStore({
     },
     logs(state) {
       return state.logs;
+    },
+    reloadNeeded(state) {
+      return state.reloadNeeded;
+    },
+    reloadTimerStarted(state) {
+      return state.reloadTimerStarted;
     },
   },
 });
