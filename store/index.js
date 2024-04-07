@@ -10,8 +10,8 @@ export default createStore({
       currentLink: "https://dev-games-backend.advbet.com/v1/ab-roulette/1",
       lastGameWinner: null,
       logs: [],
-      reloadNeeded: false,
       reloadTimerStarted: false,
+      inputStatus: false,
     };
   },
   mutations: {
@@ -20,15 +20,18 @@ export default createStore({
     },
     setLink(state, link) {
       state.currentLink = link;
+      state.reloadTimerStarted = false;
+      state.lastGameWinner = null;
+      // state.logs = [];
     },
     updateLogs(state, log) {
       state.logs.unshift(log);
     },
-    toggleReload(state) {
-      state.reloadNeeded = true;
-    },
     startReloadTimer(state) {
       state.reloadTimerStarted = true;
+    },
+    toggleInput(state, payload) {
+      state.inputStatus = payload;
     },
   },
   actions: {
@@ -44,9 +47,9 @@ export default createStore({
     },
     toggleReload(context) {
       context.commit("startReloadTimer");
-      setTimeout(() => {
-        context.commit("toggleReload");
-      }, 10000);
+    },
+    toggleInput(context, payload) {
+      context.commit("toggleInput", payload);
     },
   },
   getters: {
@@ -62,11 +65,11 @@ export default createStore({
     logs(state) {
       return state.logs;
     },
-    reloadNeeded(state) {
-      return state.reloadNeeded;
-    },
     reloadTimerStarted(state) {
       return state.reloadTimerStarted;
+    },
+    inputStatus(state) {
+      return state.inputStatus;
     },
   },
 });

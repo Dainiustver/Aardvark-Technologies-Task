@@ -34,6 +34,7 @@ export default {
   methods: {
     async fetchNextGame() {
       this.resetState();
+      this.$store.dispatch("toggleInput", true);
 
       this.isSpinning = true;
       this.currentEvent = "Fetching new game...";
@@ -50,17 +51,30 @@ export default {
         this.updateCurrentEvent(res.data.id);
 
         this.newGameTimer = setInterval(() => {
+          if (!this.dataIsReady) {
+            this.resetState();
+            this.eventHistory = [];
+            return;
+          }
+
           if (this.newGameStartsIn > 1) {
             this.newGameStartsIn--;
             this.updateCurrentEvent(res.data.id);
           } else {
             clearInterval(this.newGameTimer);
+            this.newGameTimer = null;
             this.currentEvent = "Spinning...";
             this.isSpinning = true;
             this.renderCurrentGameResults(res.data.id, res.data.uuid);
+            return;
           }
         }, 1000);
+
+        this.$store.dispatch("toggleInput", false);
       } catch (e) {
+        this.resetState();
+        this.eventHistory = [];
+        this.$store.dispatch("setFetchingStatus", false);
         this.$store.dispatch("updateLogs", "New game fetch failed");
         this.$store.dispatch("toggleReload");
       }
@@ -81,19 +95,17 @@ export default {
       try {
         const result = await axios.get(this.currentLink + `/game/${uuid}`);
         this.$store.dispatch("updateLogs", "Rendering was successful");
-        if (result.data.outcome !== undefined) {
-          this.isSpinning = false;
-          this.$store.dispatch("setGameWinner", result.data.outcome);
-          this.eventHistory.push(
-            `Game ${gameId} finished. The outcome was ${result.data.outcome}`
-          );
-          this.fetchNextGame();
-        } else {
-          setTimeout(() => {
-            this.renderCurrentGameResults(gameId, uuid);
-          }, 3000);
-        }
+
+        this.isSpinning = false;
+        this.$store.dispatch("setGameWinner", result.data.outcome);
+        this.eventHistory.push(
+          `Game ${gameId} finished. The outcome was ${result.data.outcome}`
+        );
+        this.fetchNextGame();
       } catch (e) {
+        this.resetState();
+        this.eventHistory = [];
+        this.$store.dispatch("setFetchingStatus", false);
         this.$store.dispatch("updateLogs", "Rendering failed");
         this.$store.dispatch("toggleReload");
       }
@@ -115,13 +127,15 @@ export default {
     currentLink() {
       return this.$store.getters.currentLink;
     },
+    currentlyReloading() {
+      return this.$store.getters.reloadTimerStarted;
+    },
   },
 
   watch: {
     dataIsReady: {
       handler(newValue) {
         if (newValue) {
-          this.resetState();
           this.fetchNextGame();
           this.eventHistory = [];
         }

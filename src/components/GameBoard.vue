@@ -44,6 +44,7 @@ export default {
         top: `${y}px`,
         transform: "translate(-50%, -50%)",
         color: "white",
+        "--original-bg-color": this.rouletteNumbersData[index].color,
         backgroundColor: `${this.rouletteNumbersData[index].color}`,
       };
     },
@@ -81,9 +82,7 @@ export default {
   watch: {
     dataIsReady: {
       handler(newValue) {
-        if (newValue) {
-          this.updateBoard();
-        }
+        if (newValue) this.updateBoard();
       },
       immediate: true,
     },
@@ -120,34 +119,31 @@ export default {
 
 .roulette__number {
   position: absolute;
-  width: 40px; /* Adjust size as needed */
-  height: 40px; /* Adjust size as needed */
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #fff; /* Adjust colors as needed */
-  color: #000; /* Adjust colors as needed */
-  font-size: 14px; /* Adjust text size as needed */
+  background-color: #fff;
+  color: #000;
+  font-size: 14px;
   cursor: pointer;
-  transform: translate(-50%, -50%); /* Center the numbers */
+  transform: translate(-50%, -50%);
 }
 
 @keyframes flashAnimation {
   0%,
   100% {
-    background-color: #ff0;
-    color: #000;
-  } /* Flash color */
+    background-color: var(--original-bg-color);
+  }
   50% {
-    background-color: #000;
-    color: #ff0;
-  } /* Original color */
+    background-color: rgb(14, 86, 243);
+  }
 }
 
 .roulette__winner {
-  animation: flashAnimation 3s infinite; /* Adjust timing as needed */
-  font-weight: bold; /* Optional: Makes the text bold */
+  animation: flashAnimation 3s infinite;
 }
 </style>

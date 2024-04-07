@@ -1,12 +1,24 @@
 <template>
-  <div class="formField__container">
+  <div
+    :class="{ formField__container: true, 'tooltip-container': inputStatus }"
+  >
     <label for="apiBaseUrlInput">API Base URL</label>
-    <input type="text" id="apiBaseUrlInput" v-model="baseAPI" />
+    <input
+      type="text"
+      id="apiBaseUrlInput"
+      v-model="baseAPI"
+      :disabled="inputStatus"
+    />
+    <span class="tooltip-content" v-if="inputStatus"
+      >Input disabled while fetching data</span
+    >
   </div>
-  <div v-if="reloadTimerStarted">
+  {{ dataIsReady }}
+  <div v-if="failedToFetch">
     <p class="errorMessage">
       Unfortunately something went wrong. Please check your internet connection
-      and URL above. Automatically reloading in {{ retryingInCounter }}
+      and URL above. Automatically reloading in {{ retryingInCounter }}. Attempt
+      {{ retryCounter }}/100
     </p>
   </div>
 </template>
@@ -17,7 +29,10 @@ export default {
     return {
       baseAPI: "https://dev-games-backend.advbet.com/v1/ab-roulette/1",
       fetchSuccessful: true,
+      retryingInInterval: null,
       retryingInCounter: 10,
+      retryCounter: 1,
+      failedToFetch: false,
     };
   },
 
@@ -25,6 +40,8 @@ export default {
     this.debouncedSetLink = this.debounce((newValue) => {
       this.$store.dispatch("setLink", newValue);
     }, 1000);
+
+    // window.addEventListener("offline", this.handleOffline);
   },
 
   methods: {
@@ -38,11 +55,28 @@ export default {
         }, delay);
       };
     },
+
+    // handleOffline() {
+    //   this.$store.dispatch("setLink", null);
+    //   this.$store.dispatch("setLink", this.baseAPI + "1");
+    // },
   },
 
   computed: {
     reloadTimerStarted() {
       return this.$store.getters.reloadTimerStarted;
+    },
+
+    inputStatus() {
+      return this.$store.getters.inputStatus;
+    },
+
+    currentLink() {
+      return this.$store.getters.currentLink;
+    },
+
+    dataIsReady() {
+      return this.$store.getters.dataIsFetched;
     },
   },
 
@@ -55,10 +89,46 @@ export default {
 
     reloadTimerStarted(newValue) {
       if (newValue) {
-        setInterval(() => {
-          this.retryingInCounter -= 1;
+        this.failedToFetch = true;
+        clearInterval(this.retryingInInterval);
+        this.retryingInInterval = null;
+        this.$store.dispatch("setLink", null);
+
+        this.retryingInInterval = setInterval(() => {
+          if (this.dataIsReady) {
+            this.retryingInCounter = 10;
+            this.failedToFetch = false;
+            clearInterval(this.retryingInInterval);
+            this.retryingInInterval = null;
+            return;
+          }
+          if (this.retryingInCounter <= 1) {
+            this.retryCounter += 1;
+            this.retryingInCounter = 10;
+            this.failedToFetch = false;
+            clearInterval(this.retryingInInterval);
+            this.retryingInInterval = null;
+            this.$store.dispatch("updateLogs", "Retrying...");
+            this.$store.dispatch("setLink", this.baseAPI);
+          } else {
+            this.retryingInCounter -= 1;
+            this.$store.dispatch(
+              "updateLogs",
+              `Fetching Failed. Retrying in ${this.retryingInCounter}`
+            );
+          }
         }, 1000);
       }
+    },
+
+    retryCounter(newValue) {
+      if (newValue >= 101) {
+        window.location.reload();
+      }
+    },
+
+    dataIsReady(newValue) {
+      if (newValue) this.retryCounter = 1;
     },
   },
 };
@@ -69,7 +139,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 3rem auto;
+  margin: 3rem auto 0;
   max-width: 50%;
 }
 
@@ -85,6 +155,31 @@ export default {
 .formField__container input:focus {
   outline: none;
   border-color: #007bff;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.tooltip-content {
+  visibility: hidden;
+  width: 10rem;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 6rem;
+  left: 8rem;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+.tooltip-container:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
 }
 
 .errorMessage {

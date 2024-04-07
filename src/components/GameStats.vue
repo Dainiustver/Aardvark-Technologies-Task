@@ -121,16 +121,19 @@ export default {
 
   watch: {
     newWinner(newValue) {
-      const idx = this.allSlots.findIndex((slot) => slot.result === newValue);
-      this.allSlots[idx].hits += 1;
-      this.allSlots = this.sortByHits(this.allSlots);
-      this.resultsCounter += 1;
+      if (newValue) {
+        const idx = this.allSlots.findIndex((slot) => slot.result === newValue);
+        this.allSlots[idx].hits += 1;
+        this.allSlots = this.sortByHits(this.allSlots);
+        this.resultsCounter += 1;
+      }
     },
 
     dataIsReady: {
       handler(newValue) {
         if (newValue) {
           this.updateStats();
+          this.resultsCounter = 200;
         }
       },
       immediate: true,

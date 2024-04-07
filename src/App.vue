@@ -30,23 +30,14 @@ export default {
     currentLink() {
       return this.$store.getters.currentLink;
     },
-
-    reloadNeeded() {
-      return this.$store.getters.reloadNeeded;
-    },
   },
+
   watch: {
     currentLink: {
-      handler() {
-        this.$store.dispatch("init");
+      handler(newValue) {
+        if (newValue) this.$store.dispatch("init");
       },
       immediate: true,
-    },
-
-    reloadNeeded(newValue) {
-      if (newValue) {
-        window.location.reload();
-      }
     },
   },
 };

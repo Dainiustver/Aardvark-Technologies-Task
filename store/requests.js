@@ -26,10 +26,10 @@ export default {
     async fetchHits(context) {
       context.dispatch("updateLogs", "Fetching stats...");
       const currentLink = context.getters.currentLink;
-      context.commit("setFetchingStatus", false);
+      context.dispatch("setFetchingStatus", false);
 
       try {
-        const res = await axios.get(currentLink + "/stats?limit=200"); //
+        const res = await axios.get(currentLink + "/stats?limit=200");
         context.dispatch("updateLogs", "Stats fetched successfully");
         const rollData = res.data.map((roll) => {
           return { result: roll.result, hits: roll.count };
@@ -47,7 +47,6 @@ export default {
 
       try {
         const res = await axios.get(currentLink + "/configuration");
-        context.dispatch("updateLogs", "Configuration fetched successfully");
         const config = res.data;
         const numArrayCopy = context.getters.rouletteNumbersData.slice();
         numArrayCopy.sort((a, b) => a.result - b.result);
@@ -61,8 +60,9 @@ export default {
             ),
           };
         });
+        context.dispatch("updateLogs", "Configuration fetched successfully");
         context.commit("updateConfig", updatedNumArray);
-        context.commit("setFetchingStatus", true);
+        context.dispatch("setFetchingStatus", true);
       } catch (e) {
         context.dispatch("updateLogs", "Failed to fetch configuration");
         context.dispatch("toggleReload");
@@ -72,6 +72,10 @@ export default {
     async init({ dispatch }) {
       await dispatch("fetchHits");
       await dispatch("fetchConfig");
+    },
+
+    setFetchingStatus(context, payload) {
+      context.commit("setFetchingStatus", payload);
     },
   },
 
