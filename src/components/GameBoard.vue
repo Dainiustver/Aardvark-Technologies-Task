@@ -29,7 +29,7 @@ export default {
     //Positioning roulette numbers in a circle, giving them white color and required background color
     getPositionStyle(index) {
       const totalNumbers = this.rouletteNumbersData.length;
-      const angle = (index / totalNumbers) * (2 * Math.PI) - Math.PI / 2; //This is some ChatGPT magic, don't ask me to explain it lol
+      const angle = (index / totalNumbers) * (2 * Math.PI) - Math.PI / 2; //This is some ChatGPT magic
 
       const buttonSize = 40;
       const rouletteSize = 380;
@@ -45,7 +45,7 @@ export default {
         transform: "translate(-50%, -50%)",
         color: "white",
         "--original-bg-color": this.rouletteNumbersData[index].color,
-        backgroundColor: `${this.rouletteNumbersData[index].color}`,
+        backgroundColor: this.rouletteNumbersData[index].color,
       };
     },
 
@@ -81,7 +81,9 @@ export default {
 
   watch: {
     dataIsReady(newValue) {
-      if (newValue) this.updateBoard();
+      if (newValue) {
+        this.updateBoard();
+      }
     },
 
     fetchWinner(newValue) {

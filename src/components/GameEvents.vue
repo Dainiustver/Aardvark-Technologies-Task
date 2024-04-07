@@ -20,6 +20,7 @@
 <script>
 import axios from "axios";
 import BaseSpinner from "./BaseSpinner.vue";
+
 export default {
   data() {
     return {
@@ -34,14 +35,14 @@ export default {
   methods: {
     async fetchNextGame() {
       this.resetState();
-      this.$store.dispatch("toggleInput", true);
-
       this.isSpinning = true;
       this.currentEvent = "Fetching new game...";
       this.$store.dispatch("updateLogs", "Fetching new game...");
+      this.$store.dispatch("toggleInput", true);
 
       try {
         const res = await axios.get(this.currentLink + "/nextGame");
+        this.$store.dispatch("toggleInput", false);
         this.$store.dispatch(
           "updateLogs",
           "New game fetched successfully. Starting timer..."
@@ -66,15 +67,13 @@ export default {
             this.currentEvent = "Spinning...";
             this.isSpinning = true;
             this.renderCurrentGameResults(res.data.id, res.data.uuid);
-            return;
           }
         }, 1000);
-
-        this.$store.dispatch("toggleInput", false);
       } catch (e) {
         this.resetState();
         this.eventHistory = [];
         this.$store.dispatch("setFetchingStatus", false);
+        this.$store.dispatch("toggleInput", false);
         this.$store.dispatch("updateLogs", "New game fetch failed");
         this.$store.dispatch("toggleReload");
       }
@@ -95,7 +94,6 @@ export default {
       try {
         const result = await axios.get(this.currentLink + `/game/${uuid}`);
         this.$store.dispatch("updateLogs", "Rendering was successful");
-
         this.isSpinning = false;
         this.$store.dispatch("setGameWinner", result.data.outcome);
         this.eventHistory.push(

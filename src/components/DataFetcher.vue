@@ -45,8 +45,12 @@ export default {
     debounce(func, delay) {
       //Ensuring that requests are only sent after user is done typing the url. In this case the request is sent after 1 second of inactivity in URL input field. This prevents excessive API calls and potentially disrupting performance of the application by sending requests after every keystroke
       let timeoutId = null;
+
       return function (...args) {
-        if (timeoutId) clearTimeout(timeoutId);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+
         timeoutId = setTimeout(() => {
           func(...args);
         }, delay);
@@ -76,38 +80,41 @@ export default {
     },
 
     reloadTimerStarted(newValue) {
-      //This method fires if for some reason axios fails to fetch data from backend. Most likely network issues or wrong URL. The method is responsible for retrying to render the App
-      if (newValue) {
-        this.failedToFetch = true;
-        clearInterval(this.retryingInInterval);
-        this.retryingInInterval = null;
-        this.$store.dispatch("setLink", null); //Setting currentLink to null, because the App relies on watchers in several components, which watch the current link and fire when it is changed. If it was not set to null before reseting to the one in input field, currentLink would not change in vuex and watchers would not fire, breaking the retry mechanism
-
-        this.retryingInInterval = setInterval(() => {
-          if (this.dataIsReady) {
-            this.retryingInCounter = 10;
-            this.failedToFetch = false;
-            clearInterval(this.retryingInInterval);
-            this.retryingInInterval = null;
-            return;
-          }
-          if (this.retryingInCounter <= 1) {
-            this.retryCounter += 1;
-            this.retryingInCounter = 10;
-            this.failedToFetch = false;
-            clearInterval(this.retryingInInterval);
-            this.retryingInInterval = null;
-            this.$store.dispatch("updateLogs", "Retrying...");
-            this.$store.dispatch("setLink", this.baseAPI);
-          } else {
-            this.retryingInCounter -= 1;
-            this.$store.dispatch(
-              "updateLogs",
-              `Fetching failed. Retrying in ${this.retryingInCounter}`
-            );
-          }
-        }, 1000);
+      if (!newValue) {
+        return;
       }
+
+      //This method fires if for some reason axios fails to fetch data from backend. Most likely network issues or wrong URL. The method is responsible for retrying to render the App
+      this.failedToFetch = true;
+      clearInterval(this.retryingInInterval);
+      this.retryingInInterval = null;
+      this.$store.dispatch("setLink", null); //Setting currentLink to null, because the App relies on watchers in several components, which watch the current link and fire when it is changed. If it was not set to null before reseting to the one in input field, currentLink would not change in vuex and watchers would not fire, breaking the retry mechanism
+
+      this.retryingInInterval = setInterval(() => {
+        if (this.dataIsReady) {
+          this.retryingInCounter = 10;
+          this.failedToFetch = false;
+          clearInterval(this.retryingInInterval);
+          this.retryingInInterval = null;
+          return;
+        }
+
+        if (this.retryingInCounter <= 1) {
+          this.retryCounter++;
+          this.retryingInCounter = 10;
+          this.failedToFetch = false;
+          clearInterval(this.retryingInInterval);
+          this.retryingInInterval = null;
+          this.$store.dispatch("updateLogs", "Retrying...");
+          this.$store.dispatch("setLink", this.baseAPI);
+        } else {
+          this.retryingInCounter--;
+          this.$store.dispatch(
+            "updateLogs",
+            `Fetching failed. Retrying in ${this.retryingInCounter}`
+          );
+        }
+      }, 1000);
     },
 
     retryCounter(newValue) {
@@ -118,7 +125,9 @@ export default {
     },
 
     dataIsReady(newValue) {
-      if (newValue) this.retryCounter = 1;
+      if (newValue) {
+        this.retryCounter = 1;
+      }
     },
   },
 };
@@ -129,7 +138,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 3rem auto 0;
+  margin: 2rem auto 0;
   max-width: 50%;
 }
 
@@ -173,9 +182,9 @@ export default {
 }
 
 .errorMessage {
+  margin: 0 auto;
   color: red;
   text-align: center;
   font-weight: bold;
-  margin-bottom: 3rem;
 }
 </style>

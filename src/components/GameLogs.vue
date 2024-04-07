@@ -25,7 +25,13 @@ export default {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  width: 25rem;
+  width: 30rem;
   margin: 1rem 0;
+}
+
+ul {
+  max-height: 25rem;
+  padding-right: 1.5rem;
+  overflow-y: auto;
 }
 </style>

@@ -38,6 +38,10 @@ export default {
     },
 
     async fetchConfig(context) {
+      if (!context.getters.rouletteNumbersData.length > 0) {
+        throw new Error("failed to fetch /stats");
+      }
+
       context.dispatch("updateLogs", "Fetching game configuration...");
       const currentLink = context.getters.currentLink;
 

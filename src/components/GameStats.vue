@@ -123,9 +123,9 @@ export default {
     newWinner(newValue) {
       if (newValue) {
         const idx = this.allSlots.findIndex((slot) => slot.result === newValue);
-        this.allSlots[idx].hits += 1;
+        this.allSlots[idx].hits++;
         this.allSlots = this.sortByHits(this.allSlots);
-        this.resultsCounter += 1;
+        this.resultsCounter++;
       }
     },
 

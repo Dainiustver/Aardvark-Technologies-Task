@@ -17,6 +17,7 @@ import GameStats from "./components/GameStats.vue";
 import GameEvents from "./components/GameEvents.vue";
 import GameBoard from "./components/GameBoard.vue";
 import GameLogs from "./components/GameLogs.vue";
+
 export default {
   components: {
     DataFetcher,
@@ -35,7 +36,9 @@ export default {
   watch: {
     currentLink: {
       handler(newValue) {
-        if (newValue) this.$store.dispatch("init");
+        if (newValue) {
+          this.$store.dispatch("init");
+        }
       },
       immediate: true,
     },
