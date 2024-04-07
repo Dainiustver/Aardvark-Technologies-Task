@@ -4,7 +4,7 @@
       <h2>Logs</h2>
     </header>
     <ul>
-      <li v-for="log in logs" :key="log">{{ log }}</li>
+      <li v-for="(log, index) in logs" :key="index">{{ log }}</li>
     </ul>
   </div>
 </template>

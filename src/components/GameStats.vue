@@ -86,7 +86,7 @@ export default {
     };
   },
   methods: {
-    async updateStats() {
+    updateStats() {
       const rouletteNumbersDataClone = this.$store.getters.rouletteNumbersData;
       const rouletteNumbersSorted = this.sortByHits(rouletteNumbersDataClone);
       this.allSlots = rouletteNumbersSorted;
@@ -129,14 +129,11 @@ export default {
       }
     },
 
-    dataIsReady: {
-      handler(newValue) {
-        if (newValue) {
-          this.updateStats();
-          this.resultsCounter = 200;
-        }
-      },
-      immediate: true,
+    dataIsReady(newValue) {
+      if (newValue) {
+        this.updateStats();
+        this.resultsCounter = 200;
+      }
     },
   },
 };

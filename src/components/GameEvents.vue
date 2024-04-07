@@ -127,21 +127,19 @@ export default {
     currentLink() {
       return this.$store.getters.currentLink;
     },
-    currentlyReloading() {
-      return this.$store.getters.reloadTimerStarted;
-    },
   },
 
   watch: {
-    dataIsReady: {
-      handler(newValue) {
-        if (newValue) {
-          this.fetchNextGame();
-          this.eventHistory = [];
-        }
-      },
-      immediate: true,
+    dataIsReady(newValue) {
+      if (newValue) {
+        this.fetchNextGame();
+        this.eventHistory = [];
+      }
     },
+  },
+
+  beforeDestroy() {
+    this.resetState();
   },
 
   components: { BaseSpinner },

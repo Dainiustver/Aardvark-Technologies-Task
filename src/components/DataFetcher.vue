@@ -13,7 +13,6 @@
       >Input disabled while fetching data</span
     >
   </div>
-  {{ dataIsReady }}
   <div v-if="failedToFetch">
     <p class="errorMessage">
       Unfortunately something went wrong. Please check your internet connection
@@ -28,7 +27,6 @@ export default {
   data() {
     return {
       baseAPI: "https://dev-games-backend.advbet.com/v1/ab-roulette/1",
-      fetchSuccessful: true,
       retryingInInterval: null,
       retryingInCounter: 10,
       retryCounter: 1,
@@ -37,16 +35,15 @@ export default {
   },
 
   mounted() {
+    //Setting up debounced setLink method. More info about this in the lower comment
     this.debouncedSetLink = this.debounce((newValue) => {
       this.$store.dispatch("setLink", newValue);
     }, 1000);
-
-    // window.addEventListener("offline", this.handleOffline);
   },
 
   methods: {
     debounce(func, delay) {
-      //Ensuring that requests are only sent after user is done typing the url. In this case the request is sent after 1 second of inactivity in URL input field. This prevents excessive API calls and potentially disrupting performance of the application by sending requests after every keystroke.
+      //Ensuring that requests are only sent after user is done typing the url. In this case the request is sent after 1 second of inactivity in URL input field. This prevents excessive API calls and potentially disrupting performance of the application by sending requests after every keystroke
       let timeoutId = null;
       return function (...args) {
         if (timeoutId) clearTimeout(timeoutId);
@@ -55,11 +52,6 @@ export default {
         }, delay);
       };
     },
-
-    // handleOffline() {
-    //   this.$store.dispatch("setLink", null);
-    //   this.$store.dispatch("setLink", this.baseAPI + "1");
-    // },
   },
 
   computed: {
@@ -69,10 +61,6 @@ export default {
 
     inputStatus() {
       return this.$store.getters.inputStatus;
-    },
-
-    currentLink() {
-      return this.$store.getters.currentLink;
     },
 
     dataIsReady() {
@@ -88,11 +76,12 @@ export default {
     },
 
     reloadTimerStarted(newValue) {
+      //This method fires if for some reason axios fails to fetch data from backend. Most likely network issues or wrong URL. The method is responsible for retrying to render the App
       if (newValue) {
         this.failedToFetch = true;
         clearInterval(this.retryingInInterval);
         this.retryingInInterval = null;
-        this.$store.dispatch("setLink", null);
+        this.$store.dispatch("setLink", null); //Setting currentLink to null, because the App relies on watchers in several components, which watch the current link and fire when it is changed. If it was not set to null before reseting to the one in input field, currentLink would not change in vuex and watchers would not fire, breaking the retry mechanism
 
         this.retryingInInterval = setInterval(() => {
           if (this.dataIsReady) {
@@ -114,7 +103,7 @@ export default {
             this.retryingInCounter -= 1;
             this.$store.dispatch(
               "updateLogs",
-              `Fetching Failed. Retrying in ${this.retryingInCounter}`
+              `Fetching failed. Retrying in ${this.retryingInCounter}`
             );
           }
         }, 1000);
@@ -122,6 +111,7 @@ export default {
     },
 
     retryCounter(newValue) {
+      //Reloading the App if 100 unsuccessful attempts to reconnect were made
       if (newValue >= 101) {
         window.location.reload();
       }
