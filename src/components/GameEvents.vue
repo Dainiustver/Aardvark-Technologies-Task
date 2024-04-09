@@ -62,12 +62,19 @@ export default {
             this.newGameStartsIn--;
             this.updateCurrentEvent(res.data.id);
           } else {
+            this.$store.dispatch("toggleInput", true);
             clearInterval(this.newGameTimer);
             this.newGameTimer = null;
             this.currentEvent = "Spinning...";
             this.isSpinning = true;
-            this.renderCurrentGameResults(res.data.id, res.data.uuid);
-          }
+
+            const spinningDurationMiliseconds =
+              (res.data.startDelta - res.data.fakeStartDelta + 1) * 1000;
+
+            setTimeout(() => {
+              this.renderCurrentGameResults(res.data.id, res.data.uuid);
+            }, spinningDurationMiliseconds);
+          } //Timer reaches 0, roulette "spins" for 3 seconds usually and then the result is shown. Giving +1 second just as a buffer.
         }, 1000);
       } catch (e) {
         this.resetState();
@@ -94,8 +101,9 @@ export default {
       try {
         const result = await axios.get(this.currentLink + `/game/${uuid}`);
         this.$store.dispatch("updateLogs", "Rendering was successful");
-        this.isSpinning = false;
         this.$store.dispatch("setGameWinner", result.data.outcome);
+        this.$store.dispatch("toggleInput", false);
+        this.isSpinning = false;
         this.eventHistory.push(
           `Game ${gameId} finished. The outcome was ${result.data.outcome}`
         );
@@ -104,6 +112,7 @@ export default {
         this.resetState();
         this.eventHistory = [];
         this.$store.dispatch("setFetchingStatus", false);
+        this.$store.dispatch("toggleInput", false);
         this.$store.dispatch("updateLogs", "Rendering failed");
         this.$store.dispatch("toggleReload");
       }
