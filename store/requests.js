@@ -77,6 +77,10 @@ export default {
     setFetchingStatus(context, payload) {
       context.commit("setFetchingStatus", payload);
     },
+
+    updateRouletteNumbersData(context, payload) {
+      context.commit("updateRouletteNumbersData", payload);
+    },
   },
 
   getters: {
