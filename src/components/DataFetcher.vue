@@ -9,7 +9,7 @@
     <input
       type="text"
       id="apiBaseUrlInput"
-      v-model="currentLink"
+      v-model="currentLinkCopy"
       @input="debouncedSetLink($event.target.value)"
       :disabled="inputStatus"
     />
@@ -33,10 +33,12 @@ export default {
       retryingInCounter: 10,
       retryCounter: 1,
       failedToFetch: false,
+      currentLinkCopy: null,
     };
   },
 
   mounted() {
+    this.currentLinkCopy = this.currentLink;
     //Setting up debounced setLink method. More info about this in the lower comment
     this.debouncedSetLink = this.debounce((newLink) => {
       this.$store.dispatch("setLink", newLink);
@@ -97,7 +99,7 @@ export default {
           clearInterval(this.retryingInInterval);
           this.retryingInInterval = null;
           this.$store.dispatch("updateLogs", "Retrying...");
-          this.$store.dispatch("setLink", this.currentLink);
+          this.$store.dispatch("setLink", this.currentLinkCopy);
         } else {
           this.retryingInCounter--;
           this.$store.dispatch(
