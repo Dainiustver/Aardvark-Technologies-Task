@@ -9,7 +9,8 @@
     <input
       type="text"
       id="apiBaseUrlInput"
-      v-model="baseAPI"
+      v-model="currentLink"
+      @input="debouncedSetLink($event.target.value)"
       :disabled="inputStatus"
     />
   </div>
@@ -23,10 +24,11 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
+
 export default {
   data() {
     return {
-      baseAPI: "https://dev-games-backend.advbet.com/v1/ab-roulette/1",
       retryingInInterval: null,
       retryingInCounter: 10,
       retryCounter: 1,
@@ -36,8 +38,8 @@ export default {
 
   mounted() {
     //Setting up debounced setLink method. More info about this in the lower comment
-    this.debouncedSetLink = this.debounce((newValue) => {
-      this.$store.dispatch("setLink", newValue);
+    this.debouncedSetLink = this.debounce((newLink) => {
+      this.$store.dispatch("setLink", newLink);
     }, 1000);
   },
 
@@ -59,26 +61,15 @@ export default {
   },
 
   computed: {
-    reloadTimerStarted() {
-      return this.$store.getters.reloadTimerStarted;
-    },
-
-    inputStatus() {
-      return this.$store.getters.inputStatus;
-    },
-
-    dataIsReady() {
-      return this.$store.getters.dataIsFetched;
-    },
+    ...mapState({
+      dataIsReady: (state) => state.requests.dataIsFetched,
+      currentLink: "currentLink",
+      reloadTimerStarted: "reloadTimerStarted",
+      inputStatus: "inputStatus",
+    }),
   },
 
   watch: {
-    baseAPI(newValue) {
-      if (newValue) {
-        this.debouncedSetLink(newValue);
-      }
-    },
-
     reloadTimerStarted(newValue) {
       if (!newValue) {
         return;
@@ -106,7 +97,7 @@ export default {
           clearInterval(this.retryingInInterval);
           this.retryingInInterval = null;
           this.$store.dispatch("updateLogs", "Retrying...");
-          this.$store.dispatch("setLink", this.baseAPI);
+          this.$store.dispatch("setLink", this.currentLink);
         } else {
           this.retryingInCounter--;
           this.$store.dispatch(

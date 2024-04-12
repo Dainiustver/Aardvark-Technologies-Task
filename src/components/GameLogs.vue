@@ -13,7 +13,7 @@
 export default {
   computed: {
     logs() {
-      return this.$store.getters.logs;
+      return this.$store.state.logs;
     },
   },
 };

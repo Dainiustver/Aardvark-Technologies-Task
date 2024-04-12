@@ -22,7 +22,7 @@ export default {
     async fetchHits(context) {
       context.dispatch("updateLogs", "Fetching stats...");
       context.dispatch("setFetchingStatus", false);
-      const currentLink = context.getters.currentLink;
+      const currentLink = context.rootState.currentLink;
 
       try {
         const res = await axios.get(currentLink + "/stats?limit=200");
@@ -38,17 +38,17 @@ export default {
     },
 
     async fetchConfig(context) {
-      if (!context.getters.rouletteNumbersData.length > 0) {
+      if (!context.state.rouletteNumbersData.length > 0) {
         throw new Error("failed to fetch /stats");
       }
 
       context.dispatch("updateLogs", "Fetching game configuration...");
-      const currentLink = context.getters.currentLink;
+      const currentLink = context.rootState.currentLink;
 
       try {
         const res = await axios.get(currentLink + "/configuration");
         const config = res.data;
-        const numArrayCopy = context.getters.rouletteNumbersData.slice();
+        const numArrayCopy = context.state.rouletteNumbersData.slice();
         numArrayCopy.sort((a, b) => a.result - b.result);
         const updatedNumArray = numArrayCopy.map((num, i) => {
           return {
@@ -84,16 +84,6 @@ export default {
 
     updateRouletteNumbersData(context, payload) {
       context.commit("updateRouletteNumbersData", payload);
-    },
-  },
-
-  getters: {
-    rouletteNumbersData(state) {
-      return state.rouletteNumbersData;
-    },
-
-    dataIsFetched(state) {
-      return state.dataIsFetched;
     },
   },
 };

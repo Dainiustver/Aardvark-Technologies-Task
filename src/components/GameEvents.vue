@@ -19,6 +19,7 @@
 
 <script>
 import axios from "axios";
+import { mapState } from "vuex";
 import BaseSpinner from "./BaseSpinner.vue";
 
 export default {
@@ -128,12 +129,10 @@ export default {
   },
 
   computed: {
-    dataIsReady() {
-      return this.$store.getters.dataIsFetched;
-    },
-    currentLink() {
-      return this.$store.getters.currentLink;
-    },
+    ...mapState({
+      dataIsReady: (state) => state.requests.dataIsFetched,
+      currentLink: "currentLink",
+    }),
   },
 
   watch: {

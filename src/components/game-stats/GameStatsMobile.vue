@@ -199,7 +199,7 @@ export default {
     },
 
     renderMode() {
-      return this.$store.getters.screenSize >= 768 ? "tablet" : "mobile";
+      return this.$store.state.screenSize >= 768 ? "tablet" : "mobile";
     },
 
     arrLength() {
@@ -221,6 +221,7 @@ export default {
       return this.neutralSlots.slice((this.arrLength / 3) * 2);
     },
   },
+  
   props: ["coldSlots", "neutralSlots", "hotSlots"],
 };
 </script>
@@ -229,6 +230,7 @@ export default {
 .gameStatsContent {
   margin-bottom: 1rem;
 }
+
 .legend {
   display: flex;
   justify-content: space-around;

@@ -38,7 +38,7 @@ export default {
 
   computed: {
     currentLink() {
-      return this.$store.getters.currentLink;
+      return this.$store.state.currentLink;
     },
   },
 

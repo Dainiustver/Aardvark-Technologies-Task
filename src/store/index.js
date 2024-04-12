@@ -71,34 +71,4 @@ export default createStore({
       context.commit("toggleInput", payload);
     },
   },
-
-  getters: {
-    rouletteNumbers(state) {
-      return state.rouletteNumbers;
-    },
-
-    lastGameWinner(state) {
-      return state.lastGameWinner;
-    },
-
-    currentLink(state) {
-      return state.currentLink;
-    },
-
-    logs(state) {
-      return state.logs;
-    },
-
-    screenSize(state) {
-      return state.screenSize;
-    },
-
-    reloadTimerStarted(state) {
-      return state.reloadTimerStarted;
-    },
-
-    inputStatus(state) {
-      return state.inputStatus;
-    },
-  },
 });

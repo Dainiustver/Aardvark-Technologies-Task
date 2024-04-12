@@ -13,6 +13,7 @@
 
 <script>
 import axios from "axios";
+import { mapState } from "vuex";
 import GameStatsDesktop from "./GameStatsDesktop.vue";
 import GameStatsMobile from "./GameStatsMobile.vue";
 
@@ -26,7 +27,7 @@ export default {
   methods: {
     updateStats() {
       const rouletteNumbersSorted = this.sortByHits(
-        this.$store.getters.rouletteNumbersData.slice()
+        this.$store.state.requests.rouletteNumbersData.slice()
       );
 
       this.allSlots = rouletteNumbersSorted;
@@ -56,13 +57,11 @@ export default {
   },
 
   computed: {
-    dataIsReady() {
-      return this.$store.getters.dataIsFetched;
-    },
-
-    newWinner() {
-      return this.$store.getters.lastGameWinner;
-    },
+    ...mapState({
+      dataIsReady: (state) => state.requests.dataIsFetched,
+      newWinner: "lastGameWinner",
+      screenSize: "screenSize",
+    }),
 
     coldSlots() {
       return this.allSlots.slice(0, 5);
@@ -75,10 +74,6 @@ export default {
     hotSlots() {
       return this.allSlots.slice(-5);
     },
-
-    screenSize() {
-      return this.$store.getters.screenSize;
-    },
   },
 
   watch: {
@@ -87,7 +82,7 @@ export default {
 
       if (newValue) {
         this.$store.dispatch("updateLogs", "Fetching stats...");
-        const currentLink = this.$store.getters.currentLink;
+        const currentLink = this.$store.state.currentLink;
 
         try {
           const res = await axios.get(currentLink + "/stats?limit=200");
@@ -104,7 +99,7 @@ export default {
           );
 
           const originalNumsSortedByResult =
-            this.$store.getters.rouletteNumbersData
+            this.$store.state.requests.rouletteNumbersData
               .slice()
               .sort((a, b) => a.result - b.result);
 

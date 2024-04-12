@@ -18,6 +18,8 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
+
 export default {
   data() {
     return {
@@ -57,7 +59,8 @@ export default {
     },
 
     updateBoard() {
-      const numArrayClone = this.$store.getters.rouletteNumbersData.slice();
+      const numArrayClone =
+        this.$store.state.requests.rouletteNumbersData.slice();
       const numArraySorted = numArrayClone.sort(
         (a, b) => a.position - b.position
       );
@@ -77,17 +80,11 @@ export default {
   },
 
   computed: {
-    dataIsReady() {
-      return this.$store.getters.dataIsFetched;
-    },
-
-    fetchWinner() {
-      return this.$store.getters.lastGameWinner;
-    },
-
-    screenSize() {
-      return this.$store.getters.screenSize;
-    },
+    ...mapState({
+      dataIsReady: (state) => state.requests.dataIsFetched,
+      fetchWinner: (state) => state.lastGameWinner,
+      screenSize: "screenSize",
+    }),
   },
 
   watch: {
