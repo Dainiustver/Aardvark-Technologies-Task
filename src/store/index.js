@@ -11,6 +11,7 @@ export default createStore({
       currentLink: "https://dev-games-backend.advbet.com/v1/ab-roulette/1",
       lastGameWinner: null,
       logs: [],
+      screenSize: null,
       reloadTimerStarted: false,
       inputStatus: false,
     };
@@ -29,6 +30,10 @@ export default createStore({
 
     updateLogs(state, log) {
       state.logs.unshift(log);
+    },
+
+    checkScreenSize(state, screenSize) {
+      state.screenSize = screenSize;
     },
 
     toggleReload(state) {
@@ -52,6 +57,10 @@ export default createStore({
     updateLogs(context, log) {
       let currentDateTime = new Date().toLocaleString("lt-LT");
       context.commit("updateLogs", currentDateTime + " " + log);
+    },
+
+    checkScreenSize(context, screenSize) {
+      context.commit("checkScreenSize", screenSize);
     },
 
     toggleReload(context) {
@@ -78,6 +87,10 @@ export default createStore({
 
     logs(state) {
       return state.logs;
+    },
+
+    screenSize(state) {
+      return state.screenSize;
     },
 
     reloadTimerStarted(state) {

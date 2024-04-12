@@ -2,6 +2,9 @@
   <div
     :class="{ formField__container: true, 'tooltip-container': inputStatus }"
   >
+    <span class="tooltip-content" v-if="inputStatus"
+      >Input disabled while fetching data</span
+    >
     <label for="apiBaseUrlInput">API Base URL</label>
     <input
       type="text"
@@ -9,9 +12,6 @@
       v-model="baseAPI"
       :disabled="inputStatus"
     />
-    <span class="tooltip-content" v-if="inputStatus"
-      >Input disabled while fetching data</span
-    >
   </div>
   <div v-if="failedToFetch">
     <p class="errorMessage">
@@ -138,14 +138,12 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 2rem auto 0;
-  max-width: 50%;
 }
 
 .formField__container input {
   margin: 2rem;
   padding: 1rem;
-  width: 100%;
+  width: 75%;
   border: 1px solid #ccc;
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -161,6 +159,7 @@ export default {
 }
 
 .tooltip-content {
+  position: absolute;
   visibility: hidden;
   width: 10rem;
   background-color: black;
@@ -168,10 +167,8 @@ export default {
   text-align: center;
   border-radius: 6px;
   padding: 5px 0;
-  position: absolute;
   z-index: 1;
   bottom: 6rem;
-  left: 8rem;
   opacity: 0;
   transition: opacity 0.6s;
 }
@@ -182,9 +179,22 @@ export default {
 }
 
 .errorMessage {
-  margin: 0 auto;
+  margin: 0 0 3rem;
+  padding: 0 1rem;
   color: red;
   text-align: center;
   font-weight: bold;
+}
+
+@media (min-width: 768px) {
+  .formField__container input {
+    width: 50%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .formField__container input {
+    width: 30%;
+  }
 }
 </style>

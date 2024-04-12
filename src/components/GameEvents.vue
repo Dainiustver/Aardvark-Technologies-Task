@@ -158,13 +158,12 @@ export default {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  width: 25rem;
-  margin: 1rem 0;
+  width: 100%;
 }
 
 .events__list {
   text-align: center;
-  padding: 0;
+  padding: 0 2rem;
 }
 
 .currentEvent {
@@ -180,10 +179,5 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-}
-
-.error {
-  margin-bottom: 3rem;
-  color: red;
 }
 </style>

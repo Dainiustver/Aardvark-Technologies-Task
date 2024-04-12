@@ -2,87 +2,25 @@
   <header>
     <h2 class="stats__header">Stats (last 200)</h2>
   </header>
-  <div class="stats">
-    <div class="stats__legend">
-      <div class="stats__label stats__legend-spacer"></div>
-      <div class="stats__label">Slot</div>
-      <div class="stats__label">Hits</div>
-    </div>
-    <div class="stats__section stats__section--cold">
-      <div class="stats__section-title">Cold</div>
-      <div class="stats__slots">
-        <div
-          class="stats__slot"
-          :style="{ backgroundColor: slot.color }"
-          v-for="(slot, index) in coldSlots"
-          :key="`cold-${slot.number}-${index}`"
-        >
-          {{ slot.result }}
-        </div>
-      </div>
-      <div class="stats__hits">
-        <div
-          class="stats__hit"
-          v-for="(slot, index) in coldSlots"
-          :key="`cold-hit-${slot.number}-${index}`"
-        >
-          {{ slot.hits }}
-        </div>
-      </div>
-    </div>
-    <div class="stats__section stats__section--neutral">
-      <div class="stats__section-title">Neutral</div>
-      <div class="stats__slots">
-        <div
-          class="stats__slot"
-          :style="{ backgroundColor: slot.color }"
-          v-for="(slot, index) in neutralSlots"
-          :key="`neutral-${slot.number}-${index}`"
-        >
-          {{ slot.result }}
-        </div>
-      </div>
-      <div class="stats__hits">
-        <div
-          class="stats__hit"
-          v-for="(slot, index) in neutralSlots"
-          :key="`neutral-hit-${slot.number}-${index}`"
-        >
-          {{ slot.hits }}
-        </div>
-      </div>
-    </div>
-    <div class="stats__section stats__section--hot">
-      <div class="stats__section-title">Hot</div>
-      <div class="stats__slots">
-        <div
-          class="stats__slot"
-          :style="{ backgroundColor: slot.color }"
-          v-for="(slot, index) in hotSlots"
-          :key="`hot-${slot.number}-${index}`"
-        >
-          {{ slot.result }}
-        </div>
-      </div>
-      <div class="stats__hits">
-        <div
-          class="stats__hit"
-          v-for="(slot, index) in hotSlots"
-          :key="`hot-hit-${slot.number}-${index}`"
-        >
-          {{ slot.hits }}
-        </div>
-      </div>
-    </div>
-  </div>
+  <component
+    :is="statsBasedOnWidth"
+    :key="statsBasedOnWidth"
+    :coldSlots="coldSlots"
+    :neutralSlots="neutralSlots"
+    :hotSlots="hotSlots"
+  ></component>
 </template>
 
 <script>
 import axios from "axios";
+import GameStatsDesktop from "./GameStatsDesktop.vue";
+import GameStatsMobile from "./GameStatsMobile.vue";
+
 export default {
   data() {
     return {
       allSlots: [],
+      statsBasedOnWidth: null,
     };
   },
   methods: {
@@ -90,7 +28,14 @@ export default {
       const rouletteNumbersSorted = this.sortByHits(
         this.$store.getters.rouletteNumbersData.slice()
       );
+
       this.allSlots = rouletteNumbersSorted;
+
+      if (this.statsBasedOnWidth !== null) {
+        return;
+      }
+
+      this.adjustStatsDesign();
     },
 
     sortByHits(arr) {
@@ -102,6 +47,11 @@ export default {
 
         return 0; //If hits match and there is no "00" in the comparison, keep default sorting settings
       });
+    },
+
+    adjustStatsDesign(screenSize) {
+      this.statsBasedOnWidth =
+        screenSize <= 1210 ? "GameStatsMobile" : "GameStatsDesktop";
     },
   },
 
@@ -124,6 +74,10 @@ export default {
 
     hotSlots() {
       return this.allSlots.slice(-5);
+    },
+
+    screenSize() {
+      return this.$store.getters.screenSize;
     },
   },
 
@@ -182,81 +136,21 @@ export default {
         this.updateStats();
       }
     },
+
+    screenSize(screenSize) {
+      this.adjustStatsDesign(screenSize);
+    },
+  },
+
+  components: {
+    GameStatsDesktop,
+    GameStatsMobile,
   },
 };
 </script>
 
 <style scoped>
-.stats {
-  display: flex;
-  justify-content: center;
-}
-
 .stats__header {
-  text-align: center;
-}
-
-.stats__legend {
-  display: flex;
-  flex-direction: column;
-}
-
-.stats__label {
-  display: flex;
-  align-items: center;
-  margin-top: 0.1rem;
-}
-
-.stats__legend div {
-  padding-right: 1rem;
-  height: 3rem;
-}
-
-.stats__slots,
-.stats__hits {
-  display: flex;
-  height: 3rem;
-}
-
-.stats__slot,
-.stats__hit {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.25rem;
-  width: 2.5rem;
-}
-
-.stats__slot {
-  color: white;
-}
-
-.stats__section-title,
-.stats__label {
-  text-align: center;
-  font-weight: bold;
-}
-
-.stats__section-title {
-  padding: 1rem;
-}
-
-.stats__section--cold {
-  background-color: rgb(191, 218, 225);
-}
-
-.stats__section--neutral {
-  background-color: rgb(239, 232, 232);
-}
-
-.stats__section--hot {
-  background-color: rgb(239, 150, 150);
-}
-
-.errorMessage {
-  margin-top: 1rem;
-  height: 2rem;
-  color: red;
   text-align: center;
 }
 </style>

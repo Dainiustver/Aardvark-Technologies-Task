@@ -63,6 +63,10 @@ export default {
         context.commit("updateRouletteNumbersData", updatedNumArray);
         context.dispatch("updateLogs", "Configuration fetched successfully");
         context.dispatch("setFetchingStatus", true);
+        context.commit(
+          "checkScreenSize",
+          document.documentElement.clientWidth || window.innerWidth
+        );
       } catch (e) {
         context.dispatch("updateLogs", "Failed to fetch configuration");
         context.dispatch("toggleReload");

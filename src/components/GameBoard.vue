@@ -26,8 +26,16 @@ export default {
     };
   },
   methods: {
-    //Positioning roulette numbers in a circle, giving them white color and required background color
+    //Positioning roulette numbers in a circle if device's width is large, otherwise rendering a table on the screen. Also giving the numbers white color and required background color regardless of device's width
     getPositionStyle(index) {
+      if (this.screenSize <= 576) {
+        return {
+          position: "static",
+          "--original-bg-color": this.rouletteNumbersData[index].color,
+          backgroundColor: this.rouletteNumbersData[index].color,
+        };
+      }
+
       const totalNumbers = this.rouletteNumbersData.length;
       const angle = (index / totalNumbers) * (2 * Math.PI) - Math.PI / 2; //This is some ChatGPT magic
 
@@ -43,7 +51,6 @@ export default {
         left: `${x}px`,
         top: `${y}px`,
         transform: "translate(-50%, -50%)",
-        color: "white",
         "--original-bg-color": this.rouletteNumbersData[index].color,
         backgroundColor: this.rouletteNumbersData[index].color,
       };
@@ -77,6 +84,10 @@ export default {
     fetchWinner() {
       return this.$store.getters.lastGameWinner;
     },
+
+    screenSize() {
+      return this.$store.getters.screenSize;
+    },
   },
 
   watch: {
@@ -99,35 +110,31 @@ export default {
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  width: 25rem;
-  margin: 1rem 0 3rem;
+  width: 100%;
 }
+
 .roulette {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
   position: relative;
   width: 380px;
   height: 380px;
-  margin-top: 1rem;
+  margin: 1rem;
   border-radius: 50%;
   border: 1px solid #ccc;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .roulette__number {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #fff;
-  color: #000;
-  font-size: 14px;
-  cursor: pointer;
-  transform: translate(-50%, -50%);
+  color: white;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid #ccc;
 }
 
 @keyframes flashAnimation {
@@ -142,5 +149,13 @@ export default {
 
 .roulette__winner {
   animation: flashAnimation 3s infinite;
+}
+
+@media (max-width: 576px) {
+  .roulette {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
 }
 </style>
