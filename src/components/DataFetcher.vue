@@ -39,6 +39,7 @@ export default {
 
   mounted() {
     this.currentLinkCopy = this.currentLink;
+    
     //Setting up debounced setLink method. More info about this in the lower comment
     this.debouncedSetLink = this.debounce((newLink) => {
       this.$store.dispatch("setLink", newLink);

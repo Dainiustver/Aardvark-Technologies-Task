@@ -82,7 +82,7 @@ export default {
   computed: {
     ...mapState({
       dataIsReady: (state) => state.requests.dataIsFetched,
-      fetchWinner: (state) => state.lastGameWinner,
+      fetchWinner: "lastGameWinner",
       screenSize: "screenSize",
     }),
   },

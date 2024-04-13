@@ -41,12 +41,18 @@ export default {
 
     sortByHits(arr) {
       return arr.sort((a, b) => {
-        if (a.hits !== b.hits) return a.hits - b.hits; //Sorting in ascending order if numbers don't have the same amount of hits
+        //if both compared slots have different amount of hits - prioritize higher hits (push to the right of array)
+        if (a.hits !== b.hits) return a.hits - b.hits;
 
-        if (a.result === "00") return 1; //Keeping "00" at the end of numbers with the same amount of hits, as shown in the demo
-        if (b.result === "00") return -1;
+        //highest priority goes to "00", then "0", then all other numbers. This ensures that "00" and "0" are always on the right side of list of numbers with the same amount of hits
+        const priority = (result) => {
+          if (result === "00") return 2;
+          if (result === "0") return 1;
+          return 0;
+        };
 
-        return 0; //If hits match and there is no "00" in the comparison, keep default sorting settings
+        //slots with same amount of hits get sorted by priority
+        return priority(a.result) - priority(b.result);
       });
     },
 
@@ -80,49 +86,51 @@ export default {
     async newWinner(newValue) {
       //This watcher updates rouletteNumberData in Vuex after each spin (specifically the hits of each number). Alternative approach would be to dispatch "init" function in Vuex, but that would fire unneeded axios request. Another approach is to use response from /stats and use the data directly in this component, without updating Vuex, but that would leave the store with old data. That approach would be simpler, but I believe that having all updated data in one place is the better practise
 
-      if (newValue) {
-        this.$store.dispatch("updateLogs", "Fetching stats...");
-        const currentLink = this.$store.state.currentLink;
+      if (!newValue) {
+        return;
+      }
 
-        try {
-          const res = await axios.get(currentLink + "/stats?limit=200");
-          this.$store.dispatch("updateLogs", "Stats fetched successfully");
-          const rollData = res.data.map((roll) => {
+      this.$store.dispatch("updateLogs", "Fetching stats...");
+      const currentLink = this.$store.state.currentLink;
+
+      try {
+        const res = await axios.get(currentLink + "/stats?limit=200");
+        this.$store.dispatch("updateLogs", "Stats fetched successfully");
+        const rollData = res.data.map((roll) => {
+          return {
+            result: roll.result === 37 ? "00" : roll.result.toString(), //slightly hard-coded I have to agree, but this is needed because /stats returns number "00" as 37, while /configuration returns "00". Conversion is done to later sort returned array from /stats by "results" in ascending order, equal to original array in Vuex. Otherwise indexes don't match.
+            hits: roll.count,
+          };
+        });
+
+        const rollDataSortedByResult = rollData.sort(
+          (a, b) => a.result - b.result
+        );
+
+        const originalNumsSortedByResult =
+          this.$store.state.requests.rouletteNumbersData
+            .slice()
+            .sort((a, b) => a.result - b.result);
+
+        const updatedRouletteNumbersData = originalNumsSortedByResult.map(
+          (num, i) => {
             return {
-              result: roll.result === 37 ? "00" : roll.result.toString(), //slightly hard-coded I have to agree, but this is needed because /stats returns number "00" as 37, while /configuration returns "00". Conversion is done to later sort returned array from /stats by "results" in ascending order, equal to original array in Vuex. Otherwise indexes don't match.
-              hits: roll.count,
+              result: num.result,
+              hits: rollDataSortedByResult[i].hits,
+              color: num.color,
+              position: num.position,
             };
-          });
+          }
+        );
 
-          const rollDataSortedByResult = rollData.sort(
-            (a, b) => a.result - b.result
-          );
-
-          const originalNumsSortedByResult =
-            this.$store.state.requests.rouletteNumbersData
-              .slice()
-              .sort((a, b) => a.result - b.result);
-
-          const updatedRouletteNumbersData = originalNumsSortedByResult.map(
-            (num, i) => {
-              return {
-                result: num.result,
-                hits: rollDataSortedByResult[i].hits,
-                color: num.color,
-                position: num.position,
-              };
-            }
-          );
-
-          this.$store.dispatch(
-            "updateRouletteNumbersData",
-            updatedRouletteNumbersData
-          );
-          this.updateStats();
-        } catch (e) {
-          this.$store.dispatch("updateLogs", "Failed to fetch stats");
-          this.$store.dispatch("toggleReload");
-        }
+        this.$store.dispatch(
+          "updateRouletteNumbersData",
+          updatedRouletteNumbersData
+        );
+        this.updateStats();
+      } catch (e) {
+        this.$store.dispatch("updateLogs", "Failed to fetch stats");
+        this.$store.dispatch("toggleReload");
       }
     },
 

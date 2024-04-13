@@ -55,7 +55,6 @@ export default {
         this.newGameTimer = setInterval(() => {
           if (!this.dataIsReady) {
             this.resetState();
-            // this.eventHistory = [];
             return;
           }
 
@@ -79,7 +78,6 @@ export default {
         }, 1000);
       } catch (e) {
         this.resetState();
-        // this.eventHistory = [];
         this.$store.dispatch("setFetchingStatus", false);
         this.$store.dispatch("toggleInput", false);
         this.$store.dispatch("updateLogs", "New game fetch failed");
@@ -111,7 +109,6 @@ export default {
         this.fetchNextGame();
       } catch (e) {
         this.resetState();
-        this.eventHistory = [];
         this.$store.dispatch("setFetchingStatus", false);
         this.$store.dispatch("toggleInput", false);
         this.$store.dispatch("updateLogs", "Rendering failed");
