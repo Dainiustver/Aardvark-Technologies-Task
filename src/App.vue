@@ -85,7 +85,7 @@ export default {
 <style scoped>
 header {
   width: 100%;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 h1 {

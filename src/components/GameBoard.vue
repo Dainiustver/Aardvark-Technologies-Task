@@ -4,6 +4,7 @@
       <h2>Gameboard</h2>
     </header>
     <div class="roulette">
+      <base-spinner v-if="renderSpinner"></base-spinner>
       <button
         class="roulette__number"
         v-for="(slot, index) in rouletteNumbersData"
@@ -19,6 +20,7 @@
 
 <script>
 import { mapState } from "vuex";
+import BaseSpinner from "./BaseSpinner.vue";
 
 export default {
   data() {
@@ -84,7 +86,12 @@ export default {
       dataIsReady: (state) => state.requests.dataIsFetched,
       fetchWinner: "lastGameWinner",
       screenSize: "screenSize",
+      isSpinning: "isSpinning",
     }),
+
+    renderSpinner() {
+      return this.isSpinning && this.screenSize > 576;
+    },
   },
 
   watch: {
@@ -98,6 +105,8 @@ export default {
       this.setWinner(newValue);
     },
   },
+
+  components: { BaseSpinner },
 };
 </script>
 

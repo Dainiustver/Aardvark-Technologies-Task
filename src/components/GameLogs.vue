@@ -29,8 +29,8 @@ export default {
 }
 
 ul {
-  /* max-height: 25rem; */
-  padding-right: 1.5rem;
+  max-height: 22rem;
+  padding: 0 1rem;
   overflow-y: auto;
 }
 </style>

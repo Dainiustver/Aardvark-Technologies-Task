@@ -4,15 +4,13 @@
       <h2>Events</h2>
     </header>
     <div class="events">
+      <base-spinner v-if="renderSpinner" class="eventStatus"></base-spinner>
       <ul class="events__list">
+        <li class="currentEvent">{{ currentEvent }}</li>
         <li v-for="event in eventHistory" class="event" :key="event">
           {{ event }}
         </li>
-        <li class="currentEvent">{{ currentEvent }}</li>
       </ul>
-      <div class="eventStatus">
-        <base-spinner v-if="isSpinning"></base-spinner>
-      </div>
     </div>
   </div>
 </template>
@@ -103,7 +101,7 @@ export default {
         this.$store.dispatch("setGameWinner", result.data.outcome);
         this.$store.dispatch("toggleInput", false);
         this.isSpinning = false;
-        this.eventHistory.push(
+        this.eventHistory.unshift(
           `Game ${gameId} finished. The outcome was ${result.data.outcome}`
         );
         this.fetchNextGame();
@@ -129,7 +127,12 @@ export default {
     ...mapState({
       dataIsReady: (state) => state.requests.dataIsFetched,
       currentLink: "currentLink",
+      screenSize: "screenSize",
     }),
+
+    renderSpinner() {
+      return this.isSpinning && this.screenSize <= 576;
+    },
   },
 
   watch: {
@@ -137,6 +140,10 @@ export default {
       if (newValue) {
         this.fetchNextGame();
       }
+    },
+
+    isSpinning(newValue) {
+      this.$store.dispatch("toggleSpin", newValue);
     },
   },
 
@@ -157,9 +164,24 @@ export default {
   width: 100%;
 }
 
+.events {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .events__list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-height: 22rem;
+  padding: 0 1rem;
   text-align: center;
-  padding: 0 2rem;
+  overflow-y: auto;
+}
+
+.eventStatus {
+  margin: 1rem auto;
 }
 
 .currentEvent {
@@ -168,12 +190,5 @@ export default {
 
 .event {
   margin-bottom: 0.5rem;
-}
-
-.eventStatus {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
 }
 </style>

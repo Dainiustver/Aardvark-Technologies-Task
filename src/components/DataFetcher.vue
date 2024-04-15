@@ -39,7 +39,7 @@ export default {
 
   mounted() {
     this.currentLinkCopy = this.currentLink;
-    
+
     //Setting up debounced setLink method. More info about this in the lower comment
     this.debouncedSetLink = this.debounce((newLink) => {
       this.$store.dispatch("setLink", newLink);
@@ -135,7 +135,7 @@ export default {
 }
 
 .formField__container input {
-  margin: 2rem;
+  margin: 1.5rem auto;
   padding: 1rem;
   width: 75%;
   border: 1px solid #ccc;

@@ -14,6 +14,7 @@ export default createStore({
       screenSize: null,
       reloadTimerStarted: false,
       inputStatus: false,
+      isSpinning: false,
     };
   },
 
@@ -43,6 +44,10 @@ export default createStore({
     toggleInput(state, payload) {
       state.inputStatus = payload;
     },
+
+    toggleSpin(state, newValue) {
+      state.isSpinning = newValue;
+    },
   },
 
   actions: {
@@ -69,6 +74,10 @@ export default createStore({
 
     toggleInput(context, payload) {
       context.commit("toggleInput", payload);
+    },
+
+    toggleSpin(context, newValue) {
+      context.commit("toggleSpin", newValue);
     },
   },
 });
